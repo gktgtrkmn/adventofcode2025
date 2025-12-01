@@ -1,4 +1,3 @@
-import Text.XHtml (base)
 parse :: String -> Int
 parse ('L':xs) = -(read xs)
 parse ('R':xs) = read xs
