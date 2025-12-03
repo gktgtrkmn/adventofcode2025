@@ -39,13 +39,27 @@ part1 xs
  | length xs < 2 = 0
  | otherwise = maximum [10*a + b | (i, a) <- zip [0..] xs, (j, b) <- zip [0..] xs, j > i]
 
+part2 :: Int -> [Int] -> [Int]
+part2 k xs = take k $ reverse $ go xs [] (length xs - k)
+ where
+    go [] stack _ = reverse stack
+    go (d:ds) stack dropsLeft
+     | dropsLeft > 0
+     , not (null stack)
+     , last stack < d
+     = go (d:ds) (init stack) (dropsLeft - 1)
+     | otherwise = go ds (stack ++ [d]) dropsLeft
+
 splitLine :: String -> [Int]
 splitLine = map digitToInt
+
+listToInt :: [Int] -> Integer
+listToInt xs = read $ concatMap show xs
 
 main :: IO ()
 main = do
     content <- readFile "input.txt"
     let fileLines = lines content
     let linesAsInts = map splitLine $ filter (not . null) fileLines
-    let result = sum $ map part1' linesAsInts
-    print result
+    let result2 = sum $ map (listToInt . part2 12) linesAsInts
+    print $ show result2
