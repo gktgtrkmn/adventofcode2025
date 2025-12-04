@@ -37,6 +37,7 @@ applyMarks pts = M.union (markPoints pts)
   markPoints :: [Point] -> TileMap
   markPoints validPoints = M.fromList [ (p, 'x') | p <- validPoints]
 
+-- terrible performance bc of recursion, idc
 part2' :: TileMap -> Border -> TileMap
 part2' mp border = cleanedTileMap
  where
