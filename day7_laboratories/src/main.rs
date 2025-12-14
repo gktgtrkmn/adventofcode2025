@@ -6,12 +6,12 @@ enum LabTypes {
     Start,
     Empty,
     Splitter,
-    Beam,
+    Beam(usize),
 }
 
 #[derive(Debug)]
 enum Transform {
-    MoveDown (usize),
+    MoveDown (usize, usize),
 }
 
 impl LabTypes {
@@ -19,7 +19,6 @@ impl LabTypes {
         content.lines().map(|line| {
             line.chars().map(|a| {
                 match a {
-                    '|' => LabTypes::Beam,
                     '^' => LabTypes::Splitter,
                     '.' => LabTypes::Empty,
                     'S' => LabTypes::Start,
@@ -31,19 +30,33 @@ impl LabTypes {
         .collect()
     }
 
-    fn take_transformations(transformations: &[Transform], line: &mut [LabTypes], accum: &mut usize) {
+    fn split_handle(cell: &mut LabTypes, x: usize) {
+        match *cell {
+            LabTypes::Beam(y) => {
+                *cell = LabTypes::Beam(y + x);
+            }
+            LabTypes::Empty => {
+                *cell = LabTypes::Beam(x);
+            }
+            _ => {}
+        }
+    }
+
+    fn take_transformations(transformations: &[Transform], line: &mut [LabTypes]) {
         for trans in transformations {
             match trans {
-                Transform::MoveDown(x) => {
-                    let cell = line[*x];
+                Transform::MoveDown(i, x) => {
+                    let cell = line[*i];
                     match cell {
                         LabTypes::Empty => {
-                            line[*x] = LabTypes::Beam;
+                            line[*i] = LabTypes::Beam(*x);
                         },
+                        LabTypes::Beam(y) => {
+                            line[*i] = LabTypes::Beam(y + *x);
+                        }
                         LabTypes::Splitter => {
-                            line[*x - 1] = LabTypes::Beam;
-                            line[*x + 1] = LabTypes::Beam;
-                            *accum += 1;
+                            LabTypes::split_handle(&mut line[*i - 1], *x);
+                            LabTypes::split_handle(&mut line[*i + 1], *x);
                         },
                         _ => {},
                     }
@@ -58,8 +71,11 @@ impl Transform {
         line.iter()
             .enumerate()
             .filter_map(|(i, cell)| match cell {
-                LabTypes::Start | LabTypes::Beam => {
-                    Some(Transform::MoveDown(i))
+                LabTypes::Start => {
+                    Some(Transform::MoveDown(i, 1))
+                },
+                LabTypes::Beam(x) => {
+                    Some(Transform::MoveDown(i, *x))
                 },
                 _ => None,
             })
@@ -68,19 +84,23 @@ impl Transform {
 }
 
 fn simulate(mut grid: Vec<Vec<LabTypes>>) -> usize {
-    let mut accum : usize = 0;
-
     let mut transforms: Vec<Transform> = Transform::from_labtypes_line(&grid[0]);
 
     for y in 1..grid.len() {
         let line: &mut Vec<LabTypes> = &mut grid[y];
     
-        LabTypes::take_transformations(&transforms, line, &mut accum);
+        LabTypes::take_transformations(&transforms, line);
 
         transforms = Transform::from_labtypes_line(&grid[y])
     }
 
-    accum
+    let last = &grid[grid.len() - 1];
+    last.iter().map(|cell| {
+        match cell {
+            LabTypes::Beam(x) => *x,
+            _ => 0,
+        }
+    }).sum()
 }
 
 
